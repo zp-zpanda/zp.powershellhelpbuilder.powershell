@@ -1,3 +1,3 @@
-# ZP.PowerShell.PowerShellHelpBuilder
+# ZP.PowerShellHelpBuilder.PowerShell
 
-ZP.PowerShell.PowerShellHelpBuilder is a PowerShell module that helps you to write PowerShell help files with ease.
+ZP.PowerShellHelpBuilder.PowerShell is a PowerShell module that helps you to write PowerShell help files with ease.
