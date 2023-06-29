@@ -170,7 +170,7 @@ Function Get-HelpCommentTokens
         }
         If (($CommandInfo -IsNot [FunctionInfo]) -And ($CommandInfo -IsNot [ExternalScriptInfo]))
         {
-            Write-Error "Command is not a script or a function." -ErrorAction Stop
+            Write-Error ("Command `'{0}`' is not a script or a function." -F $Command) -ErrorAction Stop
         }
         $Ast = $CommandInfo.ScriptBlock.Ast
         $FunctionAst = $Ast -As [FunctionDefinitionAst]
