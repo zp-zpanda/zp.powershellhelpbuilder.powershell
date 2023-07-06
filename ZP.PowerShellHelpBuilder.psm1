@@ -57,7 +57,7 @@ function Get-HelpCommentTokens
                 return $false
             }
 
-            for ($I = $StartIndex; $I -lt $Tokens.Length; ++$I)
+            for ($I = $StartIndex; $I -lt $Tokens.Length; $I++)
             {
                 if (-not (IsBefore -First $Tokens[$I].Extent -Second $Extent))
                 {
@@ -106,7 +106,7 @@ function Get-HelpCommentTokens
                 return $false
             }
 
-            for ($I = $StartIndex; $I -lt $Tokens.Length; ++$I)
+            for ($I = $StartIndex; $I -lt $Tokens.Length; $I++)
             {
                 if (IsAfter -First $Tokens[$I].Extent -Second $Extent)
                 {
