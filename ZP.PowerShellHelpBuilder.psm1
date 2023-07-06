@@ -1,3 +1,5 @@
+using namespace System.Collections.Generic
+using namespace System.Linq
 using namespace System.Management.Automation
 using namespace System.Management.Automation.Language
 
