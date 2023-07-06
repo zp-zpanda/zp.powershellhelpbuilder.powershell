@@ -189,7 +189,7 @@ function Get-HelpCommentTokens
                 if ($CurrentToken.Extent.StartLineNumber -gt $EndLine)
                 {
                     # Walked past region already
-                    $StartIndex = $I
+                    $StartIndex.Value = $I
                     break
                 }
 
@@ -202,7 +202,7 @@ function Get-HelpCommentTokens
                 }
                 elseif ($CurrentToken.Kind -ne [TokenKind]::NewLine)
                 {
-                    $StartIndex = $I
+                    $StartIndex.Value = $I
                     break
                 }
             }
