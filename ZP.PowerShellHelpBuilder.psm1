@@ -350,7 +350,7 @@ function Get-HelpCommentTokens
 
         # Get tokens at end
         $CommentTokens = Get-PrecedingCommentTokens -Tokens $RootAstTokens -Index $EndTokenIndex -Proximity $RootAstTokens[$EndTokenIndex].Extent.StartLineNumber
-        if ($CommentTokens -gt 0)
+        if ($CommentTokens.Count -gt 0)
         {
             return ,$CommentTokens
         }
