@@ -1,26 +1,25 @@
-Using Namespace System.Management.Automation
-Using Namespace System.Management.Automation.Language
+using namespace System.Management.Automation
+using namespace System.Management.Automation.Language
 
-$Script:CommentBlockProximity = 2
+$script:CommentBlockProximity = 2
 
-Function Get-HelpCommentTokens
+function Get-HelpCommentTokens
 {
     [CmdletBinding()]
     [OutputType([Token[]])]
-    Param
+    param
     (
         [Parameter(Mandatory, ValueFromPipeline)]
         [AllowEmptyString()]
         [string]
         $Command
     )
-    Begin
-    {}
-    Process
+
+    process
     {
-        Function Get-FirstTokenIndex
+        function Get-FirstTokenIndex
         {
-            Param
+            param
             (
                 [Token[]]
                 $Tokens,
@@ -32,9 +31,9 @@ Function Get-HelpCommentTokens
                 $StartIndex
             )
 
-            Function IsBefore
+            function IsBefore
             {
-                Param
+                param
                 (
                     [IScriptExtent]
                     $First,
@@ -43,33 +42,33 @@ Function Get-HelpCommentTokens
                     $Second
                 )
 
-                If ($First.EndLineNumber -Lt $Second.StartLineNumber)
+                if ($First.EndLineNumber -lt $Second.StartLineNumber)
                 {
-                    Return $true
+                    return $true
                 }
 
-                If ($First.EndLineNumber -Eq $Second.StartLineNumber)
+                if ($First.EndLineNumber -eq $Second.StartLineNumber)
                 {
-                    Return $First.EndColumnNumber -Le $Second.StartColumnNumber
+                    return $First.EndColumnNumber -le $Second.StartColumnNumber
                 }
 
-                Return $false
+                return $false
             }
 
-            For ($I = $StartIndex; $I -Lt $Tokens.Length; ++$I)
+            for ($I = $StartIndex; $I -lt $Tokens.Length; ++$I)
             {
-                If (-Not (IsBefore -First $Tokens[$I].Extent -Second $Extent))
+                if (-not (IsBefore -First $Tokens[$I].Extent -Second $Extent))
                 {
-                    Break
+                    break
                 }
             }
 
-            Return $I
+            return $I
         }
 
-        Function Get-LastTokenIndex
+        function Get-LastTokenIndex
         {
-            Param
+            param
             (
                 [Token[]]
                 $Tokens,
@@ -81,9 +80,9 @@ Function Get-HelpCommentTokens
                 $StartIndex
             )
 
-            Function IsAfter
+            function IsAfter
             {
-                Param
+                param
                 (
                     [IScriptExtent]
                     $First,
@@ -92,34 +91,34 @@ Function Get-HelpCommentTokens
                     $Second
                 )
 
-                If ($First.StartLineNumber -Gt $Second.EndLineNumber)
+                if ($First.StartLineNumber -gt $Second.EndLineNumber)
                 {
-                    Return $true
+                    return $true
                 }
 
-                If ($First.StartLineNumber -Eq $Second.EndLineNumber)
+                if ($First.StartLineNumber -eq $Second.EndLineNumber)
                 {
-                    Return $First.StartColumnNumber -Ge $Second.EndColumnNumber
+                    return $First.StartColumnNumber -ge $Second.EndColumnNumber
                 }
 
-                Return $false
+                return $false
             }
 
-            For ($I = $StartIndex; $I -Lt $Tokens.Length; ++$I)
+            for ($I = $StartIndex; $I -lt $Tokens.Length; ++$I)
             {
-                If (IsAfter -First $Tokens[$I].Extent -Second $Extent)
+                if (IsAfter -First $Tokens[$I].Extent -Second $Extent)
                 {
-                    Break
+                    break
                 }
             }
 
             # Off-by-one. Last token is not in definition
-            Return ($I - 1) 
+            return ($I - 1) 
         }
 
-        Function Get-PrecedingCommentTokens
+        function Get-PrecedingCommentTokens
         {
-            Param
+            param
             (
                 [Token[]]
                 $Tokens,
@@ -128,7 +127,7 @@ Function Get-HelpCommentTokens
                 $Index,
 
                 [int]
-                $Proximity = $Script:CommentBlockProximity
+                $Proximity = $script:CommentBlockProximity
             )
 
             $CommentTokens = [List[Token]]::new()
@@ -137,38 +136,38 @@ Function Get-HelpCommentTokens
             $StartLine = $Tokens[$Index].Extent.StartLineNumber - $Proximity
 
             # Walk upwards and collect in reverse
-            For ($I = ($Index - 1); $I -Ge 0; $I--)
+            for ($I = ($Index - 1); $I -ge 0; $I--)
             {
                 $CurrentToken = $Tokens[$I]
 
-                If ($CurrentToken.Extent.EndLineNumber -Lt $StartLine)
+                if ($CurrentToken.Extent.EndLineNumber -lt $StartLine)
                 {
                     # Walked past region already
-                    Break
+                    break
                 }
 
-                If ($CurrentToken.Kind -Eq [TokenKind]::Comment)
+                if ($CurrentToken.Kind -eq [TokenKind]::Comment)
                 {
                     $CommentTokens.Add($CurrentToken)
 
                     # Extend comment region
                     $StartLine = $CurrentToken.Extent.StartLineNumber - 1
                 }
-                ElseIf ($CurrentToken.Kind -Ne [TokenKind]::NewLine)
+                elseif ($CurrentToken.Kind -ne [TokenKind]::NewLine)
                 {
-                    Break
+                    break
                 }
             }
 
             # Tokens were collected in reverse, so reverse again
             $CommentTokens.Reverse()
 
-            Return ,$CommentTokens.ToArray()
+            return ,$CommentTokens.ToArray()
         }
 
-        Function Get-CommentTokens
+        function Get-CommentTokens
         {
-            Param
+            param
             (
                 [Token[]]
                 $Tokens,
@@ -183,59 +182,59 @@ Function Get-HelpCommentTokens
             $EndLine = [int]::MaxValue
 
             # Walk downwards and collect
-            For ($I = $StartIndex.Value; $I -Lt $Tokens.Length; $I++)
+            for ($I = $StartIndex.Value; $I -lt $Tokens.Length; $I++)
             {
                 $CurrentToken = $Tokens[$I]
 
-                If ($CurrentToken.Extent.StartLineNumber -Gt $EndLine)
+                if ($CurrentToken.Extent.StartLineNumber -gt $EndLine)
                 {
                     # Walked past region already
                     $StartIndex = $I
-                    Break
+                    break
                 }
 
-                If ($CurrentToken.Kind -Eq [TokenKind]::Comment)
+                if ($CurrentToken.Kind -eq [TokenKind]::Comment)
                 {
                     $CommentTokens.Add($CurrentToken)
 
                     # Set comment region to end just after comment
                     $EndLine = $CurrentToken.Extent.EndLineNumber + 1
                 }
-                ElseIf ($CurrentToken.Kind -Ne [TokenKind]::NewLine)
+                elseif ($CurrentToken.Kind -ne [TokenKind]::NewLine)
                 {
                     $StartIndex = $I
-                    Break
+                    break
                 }
             }
 
-            Return ,$CommentTokens.ToArray()
+            return ,$CommentTokens.ToArray()
         }
 
         # No command, no tokens
-        If ($Command.Length -Eq 0)
+        if ($Command.Length -eq 0)
         {
-            Return ,[Token[]]@()
+            return ,[Token[]]@()
         }
 
         $CommandInfo = Get-Command $Command
 
         # Resolve aliases
-        If ($CommandInfo -Is [AliasInfo])
+        if ($CommandInfo -is [AliasInfo])
         {
             $CommandInfo = $CommandInfo.ResolvedCommand
         }
 
         # Tokens can only be in scripts and functions
-        If (($CommandInfo -IsNot [FunctionInfo]) -And ($CommandInfo -IsNot [ExternalScriptInfo]))
+        If (($CommandInfo -isnot [FunctionInfo]) -and ($CommandInfo -isnot [ExternalScriptInfo]))
         {
-            Write-Error ("Command `'{0}`' is not a script or a function." -F $Command) -ErrorAction Stop
+            Write-Error ("Command `'{0}`' is not a script or a function." -f $Command) -ErrorAction Stop
         }
 
         # Get ASTs
         $Ast = $CommandInfo.ScriptBlock.Ast
-        $FunctionAst = $Ast -As [FunctionDefinitionAst]
+        $FunctionAst = $Ast -as [FunctionDefinitionAst]
         $RootAst = $Ast
-        While ($null -Ne $RootAst.Parent)
+        While ($null -ne $RootAst.Parent)
         {
             $RootAst = $RootAst.Parent
         }
@@ -246,15 +245,15 @@ Function Get-HelpCommentTokens
         
         $StartTokenIndex = $EndTokenIndex = $null
 
-        If ($null -Ne $FunctionAst)
+        If ($null -ne $FunctionAst)
         {
             # Get tokens in front of function
             $FunctionDeclarationTokenIndex = Get-FirstTokenIndex -Tokens $RootAstTokens -Extent $Ast.Extent -StartIndex 0
             $PrecedingCommentTokens = Get-PrecedingCommentTokens -Tokens $RootAstTokens -Index $FunctionDeclarationTokenIndex
             
-            If ($PrecedingCommentTokens.Count -Gt 0)
+            if ($PrecedingCommentTokens.Count -gt 0)
             {
-                Return ,$PrecedingCommentTokens
+                return ,$PrecedingCommentTokens
             }
 
             # Tokens are in function
@@ -262,23 +261,23 @@ Function Get-HelpCommentTokens
             $EndTokenIndex = Get-LastTokenIndex -Tokens $RootAstTokens -Extent $Ast.Extent -StartIndex $StartTokenIndex
             
             # Sanity checks
-            If ($RootAstTokens[$StartTokenIndex - 1].Kind -Ne [TokenKind]::LCurly)
+            if ($RootAstTokens[$StartTokenIndex - 1].Kind -ne [TokenKind]::LCurly)
             {
                 Write-Error "Unexpected first token in function." -ErrorAction Stop
             }
 
-            If ($RootAstTokens[$EndTokenIndex].Kind -Ne [TokenKind]::RCurly)
+            if ($RootAstTokens[$EndTokenIndex].Kind -ne [TokenKind]::RCurly)
             {
                 Write-Error "Unexpected last token in function." -ErrorAction Stop
             }
         }
-        ElseIf ($Ast -Eq $RootAst)
+        elseif ($Ast -eq $RootAst)
         {
             # Tokens must be in script
             $StartTokenIndex = 0
             $EndTokenIndex = $RootAstTokens.Length - 1
         }
-        Else
+        else
         {
             <#
             Command is defined as scriptblock variable,
@@ -296,68 +295,66 @@ Function Get-HelpCommentTokens
             $EndTokenIndex = Get-LastTokenIndex -Tokens $RootAstTokens -Extent $Ast.Extent -StartIndex $StartTokenIndex
             
             # Sanity checks
-            If ($RootAstTokens[$StartTokenIndex - 1].Kind -Ne [TokenKind]::LCurly)
+            if ($RootAstTokens[$StartTokenIndex - 1].Kind -ne [TokenKind]::LCurly)
             {
                 Write-Error "Unexpected first token in script block." -ErrorAction Stop
             }
 
-            If ($RootAstTokens[$EndTokenIndex].Kind -Ne [TokenKind]::RCurly)
+            if ($RootAstTokens[$EndTokenIndex].Kind -ne [TokenKind]::RCurly)
             {
                 Write-Error "Unexpected last token in script block." -ErrorAction Stop
             }
         }
 
         # Get tokens in definition
-        While ($true)
+        while ($true)
         {
             # Get tokens at start
             $CommentTokens = Get-CommentTokens -Tokens $RootAstTokens -StartIndex ([ref]$StartTokenIndex)
             
-            If ($CommentTokens.Count -Eq 0)
+            if ($CommentTokens.Count -eq 0)
             {
-                Break
+                break
             }
 
-            If ($Ast -Eq $RootAst)
+            if ($Ast -eq $RootAst)
             {
                 # Check if comments are close enough to be for first function instead of script
                 $EndBlock = ([ScriptBlockAst]$Ast).EndBlock
 
                 # Only unnamed end blocks can span the whole script
-                If ($null -Eq $EndBlock -Or -Not $EndBlock.Unnamed)
+                if ($null -eq $EndBlock -or -not $EndBlock.Unnamed)
                 {
-                    Return ,$CommentTokens
+                    return ,$CommentTokens
                 }
 
                 $FirstStatement = [Enumerable]::FirstOrDefault($EndBlock.Statements)
 
-                If ($FirstStatement -Is [FunctionDefinitionAst])
+                if ($FirstStatement -is [FunctionDefinitionAst])
                 {
                     $LinesBetween = $FirstStatement.Extent.StartLineNumber - ($CommentTokens[-1]).Extent.EndLineNumber
                     
-                    If ($LinesBetween -Gt $Script:CommentBlockProximity)
+                    if ($LinesBetween -gt $script:CommentBlockProximity)
                     {
-                        Return ,$CommentTokens
+                        return ,$CommentTokens
                     }
 
-                    Break
+                    break
                 }
             }
 
-            Return ,$CommentTokens
+            return ,$CommentTokens
         }
 
         # Get tokens at end
         $CommentTokens = Get-PrecedingCommentTokens -Tokens $RootAstTokens -Index $EndTokenIndex -Proximity $RootAstTokens[$EndTokenIndex].Extent.StartLineNumber
-        If ($CommentTokens -Gt 0)
+        if ($CommentTokens -gt 0)
         {
-            Return ,$CommentTokens
+            return ,$CommentTokens
         }
 
         # No tokens found
-        Return ,[Token[]]@()
+        return ,[Token[]]@()
     }
-    End
-    {}
 }
 Export-ModuleMember -Function @("Get-HelpCommentTokens")
