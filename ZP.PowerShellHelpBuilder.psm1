@@ -322,15 +322,14 @@ function Get-HelpCommentTokens
             if ($Ast -eq $RootAst)
             {
                 # Check if comments are close enough to be for first function instead of script
-                $EndBlock = ([ScriptBlockAst]$Ast).EndBlock
 
                 # Only unnamed end blocks can span the whole script
-                if ($null -eq $EndBlock -or -not $EndBlock.Unnamed)
+                if (-not $Ast.EndBlock.Unnamed)
                 {
                     return ,$CommentTokens
                 }
 
-                $FirstStatement = [Enumerable]::FirstOrDefault($EndBlock.Statements)
+                $FirstStatement = [Enumerable]::FirstOrDefault($Ast.EndBlock.Statements)
 
                 if ($FirstStatement -is [FunctionDefinitionAst])
                 {
