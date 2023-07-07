@@ -243,7 +243,7 @@ function Get-HelpCommentTokens
 
         # Get tokens
         $RootAstTokens = $RootAstErrors = $null
-        [Parser]::ParseInput($RootAst.Extent.Text, [ref]$RootAstTokens, [ref]$RootAstErrors) | Out-Null
+        $null = [Parser]::ParseInput($RootAst.Extent.Text, [ref]$RootAstTokens, [ref]$RootAstErrors)
         
         $StartTokenIndex = $EndTokenIndex = $null
 
