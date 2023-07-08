@@ -1,3 +1,4 @@
+using namespace System
 using namespace System.Collections.Generic
 using namespace System.Linq
 using namespace System.Management.Automation
@@ -358,4 +359,67 @@ function Get-HelpCommentTokens
         return ,[Token[]]@()
     }
 }
-Export-ModuleMember -Function @("Get-HelpCommentTokens")
+
+function Get-TextFromCommentTokens
+{
+    [CmdletBinding()]
+    [OutputType([string])]
+    param
+    (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [Token[]]
+        $Tokens
+    )
+
+    process
+    {
+        $CommentLines = [List[string]]::new()
+
+        foreach ($Text in $Tokens.Text)
+        {
+            $I = 0
+            if ($Text[0] -eq "<")
+            {
+                # Text is multi-line block comment, which starts with '<#' and '#>', so skip them
+                $LineStart = 2
+                for ($I = 2; $I -lt ($Text.Length - 2); $I++)
+                {
+                    # Check for newline
+                    if ($Text[$I] -eq "`n")
+                    {
+                        # Linux newline, proceed
+                        $CommentLines.Add($Text.Substring($LineStart, $I - $LineStart))
+                        $LineStart = $I + 1
+                    }
+                    elseif ($Text[$I] -eq "`r")
+                    {
+                        # Start of Windows newline (CR), chop text, but check for LF for newline also
+                        $CommentLines.Add($Text.Substring($LineStart, $I - $LineStart))
+
+                        # No need to check length here as comment text has at least '#>' at end
+                        if ($Text[$I + 1] -eq "`n")
+                        {
+                            $I++
+                        }
+
+                        $LineStart = $I + 1
+                    }
+                }
+                $CommentLines.Add($Text.Substring($LineStart, $I - $LineStart))
+            }
+            else
+            {
+                # Skip all leading '#'s as it is common to use more than one '#'
+                while ($I -lt $Text.Length -and $Text[$I] -eq "#")
+                {
+                    $I++
+                }
+
+                $CommentLines.Add($Text.Substring($I))
+            }
+        }
+        return $CommentLines.ToArray() -join [Environment]::NewLine
+    }
+}
+
+Export-ModuleMember -Function @("Get-HelpCommentTokens", "Get-TextFromCommentTokens")
