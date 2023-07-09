@@ -214,7 +214,7 @@ function Get-HelpCommentTokens
         }
 
         # No command, no tokens
-        if ($Command.Length -eq 0)
+        if ($Command -eq "")
         {
             return ,[Token[]]@()
         }
