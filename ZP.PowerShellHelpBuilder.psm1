@@ -363,12 +363,16 @@ function Get-HelpCommentTokens
 function Get-TextFromCommentTokens
 {
     [CmdletBinding()]
-    [OutputType([string])]
+    [OutputType([string[]], [string])]
     param
     (
         [Parameter(Mandatory, ValueFromPipeline)]
         [Token[]]
-        $Tokens
+        $Tokens,
+
+        [Parameter()]
+        [switch]
+        $AsString
     )
 
     process
@@ -418,7 +422,7 @@ function Get-TextFromCommentTokens
                 $CommentLines.Add($Text.Substring($I))
             }
         }
-        return $CommentLines.ToArray() -join [Environment]::NewLine
+        return $AsString ? $CommentLines.ToArray() -join [Environment]::NewLine : ,$CommentLines.ToArray()
     }
 }
 
