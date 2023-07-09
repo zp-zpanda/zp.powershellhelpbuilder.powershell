@@ -367,6 +367,7 @@ function Get-TextFromCommentTokens
     param
     (
         [Parameter(Mandatory, ValueFromPipeline)]
+        [AllowEmptyCollection()]
         [Token[]]
         $Tokens,
 
@@ -377,6 +378,12 @@ function Get-TextFromCommentTokens
 
     process
     {
+        # No tokens, no text
+        if ($Tokens.Count -eq 0)
+        {
+            return $AsString ? "" : ,[string[]]@()
+        }
+
         $CommentLines = [List[string]]::new()
 
         foreach ($Text in $Tokens.Text)
