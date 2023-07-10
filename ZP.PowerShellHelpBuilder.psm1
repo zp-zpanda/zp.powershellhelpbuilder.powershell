@@ -8,6 +8,8 @@ $Script:CommentBlockProximity = 2
 $Script:Directive = "^\s*\.(\w+)(\s+(\S.*))?\s*$"
 $Script:Blankline = "^\s*$"
 
+#region Get help info from comments
+
 function Get-HelpCommentTokens
 {
     [CmdletBinding()]
@@ -541,5 +543,7 @@ function Get-HelpInfoFromComments
         return $HelpInfo
     }
 }
+
+#endregion Get help info from comments
 
 Export-ModuleMember -Function @("Get-HelpCommentTokens", "Get-TextFromCommentTokens", "Get-HelpInfoFromComments")
