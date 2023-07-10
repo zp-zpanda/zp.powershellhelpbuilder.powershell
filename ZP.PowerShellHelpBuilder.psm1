@@ -4,7 +4,7 @@ using namespace System.Linq
 using namespace System.Management.Automation
 using namespace System.Management.Automation.Language
 
-$script:CommentBlockProximity = 2
+$Script:CommentBlockProximity = 2
 
 function Get-HelpCommentTokens
 {
@@ -130,7 +130,7 @@ function Get-HelpCommentTokens
                 $Index,
 
                 [int]
-                $Proximity = $script:CommentBlockProximity
+                $Proximity = $Script:CommentBlockProximity
             )
 
             $CommentTokens = [List[Token]]::new()
@@ -336,7 +336,7 @@ function Get-HelpCommentTokens
                 {
                     $LinesBetween = $FirstStatement.Extent.StartLineNumber - ($CommentTokens[-1]).Extent.EndLineNumber
                     
-                    if ($LinesBetween -gt $script:CommentBlockProximity)
+                    if ($LinesBetween -gt $Script:CommentBlockProximity)
                     {
                         return ,$CommentTokens
                     }
