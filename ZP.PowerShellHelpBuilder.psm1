@@ -4,7 +4,11 @@ using namespace System.Linq
 using namespace System.Management.Automation
 using namespace System.Management.Automation.Language
 
-$script:CommentBlockProximity = 2
+$Script:CommentBlockProximity = 2
+$Script:Directive = "^\s*\.(\w+)(\s+(\S.*))?\s*$"
+$Script:Blankline = "^\s*$"
+
+#region Get help info from comments
 
 function Get-HelpCommentTokens
 {
@@ -130,7 +134,7 @@ function Get-HelpCommentTokens
                 $Index,
 
                 [int]
-                $Proximity = $script:CommentBlockProximity
+                $Proximity = $Script:CommentBlockProximity
             )
 
             $CommentTokens = [List[Token]]::new()
@@ -336,7 +340,7 @@ function Get-HelpCommentTokens
                 {
                     $LinesBetween = $FirstStatement.Extent.StartLineNumber - ($CommentTokens[-1]).Extent.EndLineNumber
                     
-                    if ($LinesBetween -gt $script:CommentBlockProximity)
+                    if ($LinesBetween -gt $Script:CommentBlockProximity)
                     {
                         return ,$CommentTokens
                     }
@@ -433,4 +437,113 @@ function Get-TextFromCommentTokens
     }
 }
 
-Export-ModuleMember -Function @("Get-HelpCommentTokens", "Get-TextFromCommentTokens")
+function Get-HelpInfoFromComments
+{
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param
+    (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [AllowEmptyCollection()]
+        [AllowEmptyString()]
+        [string[]]
+        $Comments
+    )
+    
+    process
+    {
+        function Get-Section
+        {
+            param
+            (
+                [string[]]
+                $Comments,
+
+                [ref]
+                $LineIndex
+            )
+
+            $Capturing = $false
+            $LeadingWhitespaceCount = 0
+            $Section = ""
+            $NBSP = [char]0xA0
+
+            for ($LineIndex.Value++; $LineIndex.Value -lt $Comments.Count; $LineIndex.Value++)
+            {
+                $Line = $Comments[$LineIndex.Value];
+                if (-not $Capturing -and [regex]::IsMatch($Line, $Script:Blankline))
+                {
+                    # Skip blank lines before capturing
+                    continue
+                }
+
+                if ([regex]::IsMatch($Line, $Script:Directive))
+                {
+                    # Break on all directives and go back to before directive
+                    $LineIndex.Value--
+                    break
+                }
+
+                # The first line of a section sets how much whitespace we ignore
+                if (-not $Capturing)
+                {
+                    $I = 0
+                    while ($I -lt $Line.Length -and ($Line[$I] -eq " " -or $Line[$I] -eq "`t" -or $Line[$I] -eq $NBSP))
+                    {
+                        $LeadingWhitespaceCount++
+                        $I++
+                    }
+                }
+
+                $Capturing = $true
+
+                # Skip leading whitespace based on first line
+                $Start = 0
+                while ($Start -lt $Line.Length -and $Start -lt $LeadingWhitespaceCount -and ($Line[$Start] -eq " " -or $Line[$start] -eq "`t" -or $Line[$Start] -eq $NBSP))
+                {
+                    $Start++
+                }
+
+                $Section += $Line.Substring($Start)
+                $Section += [Environment]::NewLine
+            }
+
+            return $Section
+        }
+
+        # No text, no help info
+        if ($Comments.Count -eq 0)
+        {
+            return @{}
+        }
+        
+        $HelpInfo = @{}
+
+        for ($I = 0; $I -lt $Comments.Count; $I++)
+        {
+            $Match = [regex]::Match($Comments[$I], $Script:Directive)
+            if ($Match.Success)
+            {
+                $Keyword = $Match.Groups[1].Value.ToUpperInvariant()
+                $SectionId = $Match.Groups[3].Value.Trim()
+                $Section = Get-Section -Comments $Comments -LineIndex ([ref]$I)
+
+                if (-not $HelpInfo.ContainsKey($Keyword))
+                {
+                    $HelpInfo.$Keyword = @{}
+                }
+
+                $HelpInfo.$Keyword.$SectionId += $Section
+            }
+            elseif (-not [regex]::IsMatch($Comments[$I], $Script:Blankline))
+            {
+                return @{}
+            }
+        }
+        return $HelpInfo
+    }
+}
+
+#endregion Get help info from comments
+
+Export-ModuleMember -Function @("Get-HelpCommentTokens", "Get-TextFromCommentTokens", "Get-HelpInfoFromComments")
